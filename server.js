@@ -5,7 +5,7 @@ import cors from "cors";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors()); // מאפשר לכל דומיין לגשת לשרת ה-proxy שלך (ניתן להגביל לדומיין ספציפי)
+app.use(cors());
 
 app.get("/get-oref-alerts", async (req, res) => {
   const orefUrl =
