@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="he">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>התראות מערכת</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        direction: rtl; /* כדי לתמוך בעברית */
+        background-color: #f4f4f4;
+        margin: 20px;
+      }
+      .alert-container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 15px;
+      }
+      .alert-item {
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border-left: 5px solid;
+      }
+      .alert-item p {
+        margin: 0;
+        line-height: 1.5;
+      }
+      .color-orange {
+        color: orange;
+        border-color: orange;
+      }
+      .color-red {
+        color: red;
+        border-color: red;
+      }
+      .color-green {
+        color: green;
+        border-color: green;
+      }
+      .loading {
+        text-align: center;
+        font-size: 1.2em;
+        color: #555;
+      }
+      .timer-container {
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 15px;
+        text-align: center;
+      }
+      .timer {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #333;
+      }
+      .last-update {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>סטטוס התראות</h1>
+
+    <div class="timer-container">
+      <div class="last-update" id="last-update">עדכון אחרון: טוען...</div>
+    </div>
+
+    <div id="alerts-display" class="alert-container">
+      <p class="loading">טוען התראות...</p>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const alertsDisplay = document.getElementById("alerts-display");
+        const countdownTimer = document.getElementById("countdown-timer");
+        const lastUpdate = document.getElementById("last-update");
+
+        // **שנה את הכתובת הזו לכתובת ה-URL האמיתית שלך**
+        const API_URL = "http://localhost:3000/get-oref-alerts";
+
+        let countdown = 5; // 5 שניות
+        let timerInterval;
+
+        function updateTimer() {
+          countdown--;
+          if (countdown < 0) {
+            countdown = 5;
+          }
+          countdownTimer.textContent = `0${Math.floor(countdown / 60)}:${
+            countdown % 60 < 10 ? "0" : ""
+          }${countdown % 60}`;
+        }
+
+        function updateLastUpdateTime() {
+          const now = new Date();
+          const timeString = now.toLocaleTimeString("he-IL");
+          const dateString = now.toLocaleDateString("he-IL");
+          lastUpdate.textContent = `עדכון אחרון: ${dateString} ${timeString}`;
+        }
+
+        async function fetchAlerts() {
+          try {
+            // // מדמה קריאת API במקרה שאין לך URL אמיתי לטסט
+            // const response = await new Promise(resolve => setTimeout(() => {
+            //     resolve({
+            //         ok: true,
+            //         json: () => Promise.resolve([
+            //             {"data":"הר אדר","date":"19.06.2025","time":"07:39:59","alertDate":"2025-06-19T07:40:00","category":13,"category_desc":"ירי רקטות וטילים -  האירוע הסתיים","matrix_id":10,"rid":112234,"NAME_HE":"הר אדר","NAME_EN":"Har Adar","NAME_AR":"هار آدار","NAME_RU":"Хар אדר"},
+            //             {"data":"הר אדר","date":"19.06.2025","time":"07:12:26","alertDate":"2025-06-19T07:12:00","category":1,"category_desc":"ירי רקטות וטילים","matrix_id":1,"rid":110601,"NAME_HE":"הר אדר","NAME_EN":"Har Adar","NAME_AR":"هار آדר","NAME_RU":"Хар אדר"},
+            //             {"data":"הר אדר","date":"19.06.2025","time":"07:07:19","alertDate":"2025-06-19T07:07:00","category":14,"category_desc":"בדקות הקרובות צפויות להתקבל התרעות באזורך","matrix_id":10,"rid":110082,"NAME_HE":"הר אדר","NAME_EN":"Har Adar","NAME_AR":"هار אדר","NAME_RU":"Хар אדר"},
+            //             {"data":"הר אדר","date":"19.06.2025","time":"07:04:04","alertDate":"2025-06-19T07:04:00","category":14,"category_desc":"בדקות הקרובות צפויות להתקבל התרעות באזורך","matrix_id":10,"rid":108974,"NAME_HE":"הר אדר","NAME_EN":"Har Adar","NAME_AR":"هار אדر","NAME_RU":"Хар אדר"}
+            //         ])
+            //     });
+            // }, 500)); // מדמה השהייה של חצי שנייה
+
+            // **כדי להשתמש ב-API אמיתי, הסר את קטע הקוד של ה-Promise והשתמש בזה:**
+            const response = await fetch(API_URL);
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const alerts = await response.json();
+            displayAlerts(alerts);
+            updateLastUpdateTime();
+          } catch (error) {
+            console.error("שגיאה בקבלת ההתראות:", error);
+            alertsDisplay.innerHTML = `<p style="color: red;">שגיאה בטעינת ההתראות. אנא נסה שוב מאוחר יותר.</p>`;
+          }
+        }
+
+        function displayAlerts(alerts) {
+          alertsDisplay.innerHTML = ""; // מנקה את תוכן הטעינה
+          if (alerts.length === 0) {
+            alertsDisplay.innerHTML = "<p>אין התראות להצגה כרגע.</p>";
+            return;
+          }
+
+          alerts.forEach((alert) => {
+            const alertDiv = document.createElement("div");
+            alertDiv.classList.add("alert-item");
+
+            let statusText = alert.category_desc; // ברירת מחדל: תיאור הקטגוריה המלא
+            let statusClass = "color-gray"; // ברירת מחדל: אפור
+
+            if (alert.category_desc.includes("האירוע הסתיים")) {
+              statusText = "האירוע הסתיים";
+              statusClass = "color-green";
+            } else if (alert.category_desc.includes("ירי רקטות וטילים")) {
+              statusText = "ירי רקטות וטילים";
+              statusClass = "color-red";
+            } else if (alert.category_desc.includes("צפויות להתקבל התרעות")) {
+              statusText = "צפויות להתקבל התרעות";
+              statusClass = "color-orange";
+            } else if (alert.category_desc.includes("ניתן לצאת מהמרחב המוגן")) {
+              statusText = "ניתן לצאת מהמרחב המוגן"; // או כל ניסוח אחר שתרצה
+              statusClass = "color-green"; // ירוק כי זה סוף אירוע
+            } else if (
+              alert.category_desc.includes("שהייה בסמיכות למרחב מוגן")
+            ) {
+              statusText = "יש לשהות בסמיכות למרחב מוגן";
+              statusClass = "color-orange"; // כתום כי זה סטטוס ביניים לפני ירי או סיום
+            } else if (
+              alert.category_desc.includes("סיום שהייה בסמיכות למרחב המוגן")
+            ) {
+              statusText = "סיום שהייה בסמיכות למרחב המוגן";
+              statusClass = "color-green"; // ירוק כי זה סיום
+            }
+
+            alertDiv.classList.add(statusClass);
+
+            alertDiv.innerHTML = `
+                        <p><strong>אזור:</strong> ${alert.NAME_HE}</p>
+                        <p><strong>תאריך:</strong> ${alert.date} ${alert.time}</p>
+                        <p><strong>סטטוס:</strong> ${statusText}</p>
+                    `;
+            alertsDisplay.appendChild(alertDiv);
+          });
+        }
+
+        fetchAlerts();
+        // ניתן להוסיף כאן קריאה חוזרת (לדוגמה כל 30 שניות) כדי לרענן את ההתראות
+        setInterval(fetchAlerts, 5000);
+      });
+    </script>
+  </body>
+</html>
